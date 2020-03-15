@@ -1,14 +1,13 @@
 # build stage
 FROM golang:1.14.0-alpine as builder
 ENV GO111MODULE=on
-WORKDIR /app
 # copy go.mod and sum first for caching
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
 # GOOS=linux GOARCH=amd64
-RUN CGO_ENABLED=0 go build -o application .
+RUN CGO_ENABLED=0 go build -o /app/application .
 
 
 # final stage
