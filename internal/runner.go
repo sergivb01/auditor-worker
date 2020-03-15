@@ -3,6 +3,7 @@ package worker
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,9 +13,11 @@ import (
 )
 
 func (w *Worker) runTarget(job *Job) bool {
+	defer w.Track("runTarget(job *Job)", Start())
+
 	job.Execute.StartTime = time.Now()
 
-	cmd := exec.Command(filepath.Join(job.workingDir, job.ID+".exe"))
+	cmd := exec.Command(filepath.Join(job.workingDir, "target.exe"))
 	cmdStdin, err := cmd.StdinPipe()
 	if err != nil {
 		job.Execute.errChan <- "error piping to stdin from cmd: " + err.Error()
@@ -54,9 +57,11 @@ func (w *Worker) runTarget(job *Job) bool {
 	for i := 0; scan.Scan(); i++ {
 		str := scan.Text()
 		if str != job.InputOutput.ExpectedOutput[i] {
+			job.Execute.errChan <- fmt.Sprintf("[line %d] output mismatch, expected %q but received %q", i+1, job.InputOutput.ExpectedOutput[i], str)
 			w.log.Debug("output mismatch", zap.String("jobID", job.ID),
 				zap.String("expected", job.InputOutput.ExpectedOutput[i]),
-				zap.String("received", str))
+				zap.String("received", str),
+				zap.Int("line", i+1))
 		}
 		job.Execute.outChan <- str
 	}

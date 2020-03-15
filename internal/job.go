@@ -2,48 +2,61 @@ package worker
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/rs/xid"
 	"github.com/sergivb01/acmecopy/api"
 	"go.uber.org/zap"
 )
 
 type JobTiming struct {
-	StartTime time.Time     `json:"startTime"`
-	EndTime   time.Time     `json:"endTime"`
-	Took      time.Duration `json:"took"`
+	StartTime time.Time
+	EndTime   time.Time
+	Took      time.Duration
 
-	errChan chan string `json:"-"`
-	outChan chan string `json:"-"`
-	//
-	Output []string `json:"output"`
-	Errors []string `json:"errors"`
+	errChan chan string
+	outChan chan string
+
+	Output []string
+	Errors []string
 }
 
 type InputOutput struct {
-	Input          []string `json:"input"`
-	ExpectedOutput []string `json:"expectedInput"`
+	Input          []string
+	ExpectedOutput []string
 }
 
 type Job struct {
-	ID string `json:"id"`
+	ID string
 
-	UploadFiles  []string `json:"uploadFiles"`
-	CompileFiles []string `json:"compileFiles"`
+	UploadFiles  []string
+	CompileFiles []string
 
-	InputOutput InputOutput `json:"inputOutput"`
+	InputOutput InputOutput
 
-	req        *api.CompileRequest `json:"compileRequest"`
-	workingDir string              `json:"workingDir"`
+	req        *api.CompileRequest
+	workingDir string
 
-	Build   JobTiming `json:"build"`
-	Execute JobTiming `json:"execute"`
+	Build   JobTiming
+	Execute JobTiming
+
+	sync.Mutex
 }
 
-func newJob(req *api.CompileRequest, dir string) *Job {
+func (w *Worker) newJob(req *api.CompileRequest) (*Job, error) {
+	id := xid.New().String()
+
+	dir := filepath.Join(w.buildsDir, "builds_"+id)
+	if err := os.Mkdir(dir, 0700); err != nil {
+		return nil, fmt.Errorf("could not create %q dir: %w", dir, err)
+	}
+
 	return &Job{
-		ID:         "abcdef",
+		ID:         id,
 		req:        req,
 		workingDir: dir,
 		Execute: JobTiming{
@@ -65,7 +78,7 @@ func newJob(req *api.CompileRequest, dir string) *Job {
 				"test123 hola ",
 			},
 		},
-	}
+	}, nil
 }
 
 func (job *Job) listenForOutputs(w *Worker) {
@@ -74,25 +87,24 @@ func (job *Job) listenForOutputs(w *Worker) {
 		case err := <-job.Build.errChan:
 			job.Build.Errors = append(job.Build.Errors, err)
 			w.log.Info("received error from compiler", zap.String("jobID", job.ID), zap.String("error", err))
-			fmt.Printf("error compiling file: %s", err)
 			break
 
 		case buildOut := <-job.Build.outChan:
 			if strings.TrimSpace(buildOut) != "" {
-				job.Build.Errors = append(job.Build.Errors, buildOut)
+				job.Build.Output = append(job.Build.Output, buildOut)
 				w.log.Info("received output from compiler", zap.String("jobID", job.ID), zap.String("out", buildOut))
 			}
 			break
 
 		case err := <-job.Execute.errChan:
-			job.Build.Errors = append(job.Build.Errors, err)
+			job.Execute.Errors = append(job.Execute.Errors, err)
 			w.log.Info("received error from exec", zap.String("jobID", job.ID), zap.String("error", err))
 			break
 
-		case buildOut := <-job.Execute.outChan:
-			if strings.TrimSpace(buildOut) != "" {
-				job.Build.Errors = append(job.Build.Errors, buildOut)
-				w.log.Info("received output from exec", zap.String("jobID", job.ID), zap.String("out", buildOut))
+		case execOut := <-job.Execute.outChan:
+			if strings.TrimSpace(execOut) != "" {
+				job.Execute.Output = append(job.Execute.Output, execOut)
+				w.log.Info("received output from exec", zap.String("jobID", job.ID), zap.String("out", execOut))
 			}
 			break
 		}

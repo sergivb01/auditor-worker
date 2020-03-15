@@ -8,10 +8,16 @@ import (
 
 // Config defines the server configuration
 type Config struct {
-	Listen     string
+	Listen string
+
 	Production bool
-	TLSCert    string
-	TLSKey     string
+
+	CCacheEnabled bool
+
+	RemoveOld  bool
+
+	TLSCert string
+	TLSKey  string
 }
 
 func loadConfig() (*Config, error) {
@@ -23,6 +29,8 @@ func loadConfig() (*Config, error) {
 		Production: getEnv("PRODUCTION", "false") == "true",
 		TLSCert:    getEnv("TLS_CERT", "C:\\Users\\Sergi\\Desktop\\acmecopy\\certs\\certificate.pem"),
 		TLSKey:     getEnv("TLS_KEY", "C:\\Users\\Sergi\\Desktop\\acmecopy\\certs\\key.pem"),
+		RemoveOld:  getEnv("REMOVE_OLD", "true") == "true",
+		CCacheEnabled:  getEnv("CCACHE_ENABLED", "true") == "true",
 	}, nil
 }
 

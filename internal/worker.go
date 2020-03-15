@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 
 	"github.com/sergivb01/acmecopy/api"
 	"go.uber.org/zap"
@@ -15,8 +16,9 @@ import (
 type Worker struct {
 	grpcServer *grpc.Server
 
-	creds credentials.TransportCredentials
-	cfg   Config
+	buildsDir string
+	creds     credentials.TransportCredentials
+	cfg       Config
 
 	log *zap.Logger
 }
@@ -44,10 +46,16 @@ func NewWorker() (*Worker, error) {
 		return nil, fmt.Errorf("error creating TLS credentials: %w", err)
 	}
 
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("could not get current wd: %w", err)
+	}
+
 	return &Worker{
-		cfg:   *c,
-		log:   logger,
-		creds: creds,
+		cfg:       *c,
+		buildsDir: filepath.Join(pwd, "builds"),
+		log:       logger,
+		creds:     creds,
 	}, nil
 }
 
