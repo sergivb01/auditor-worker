@@ -16,7 +16,7 @@ COPY --from=builder /app/application /app/
 
 # port configuration
 EXPOSE 8080
-ENV PORT 8080
+ENV LISTEN_ADDR ":8080"
 
 USER default
 
