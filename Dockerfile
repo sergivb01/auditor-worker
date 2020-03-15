@@ -1,24 +1,26 @@
 # build stage
-FROM golang as builder
-ENV GO111MODULE=on
-WORKDIR /out
-# copy go.mod and sum first for caching
+FROM golang:1.14.0-buster as builder
+
+# if dependencies are updated, rebuild everything
+WORKDIR /app
+
 COPY go.mod .
 COPY go.sum .
+
 RUN go mod download
+RUN go mod verify
+
 COPY . .
-# GOOS=linux GOARCH=amd64
-RUN CGO_ENABLED=0 go build -o application .
+ENV GO111MODULE=on
+RUN CGO_ENABLED=0 GOOS=linux go build -o application github.com/sergivb01/auditor-worker/cmd
 
-
-# final stage
+#second stage
 FROM scratch
-COPY --from=builder /out/application /app/
+WORKDIR /application/
 
-# port configuration
-EXPOSE 8080
-ENV LISTEN_ADDR ":8080"
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/application .
 
-USER default
+CMD ["./application"]
 
-ENTRYPOINT ["/app/application"]
+export DOCKER_BUILDKIT=1
