@@ -1,18 +1,19 @@
 # build stage
-FROM golang:1.14.0-alpine as builder
+FROM golang as builder
 ENV GO111MODULE=on
+WORKDIR /out
 # copy go.mod and sum first for caching
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
 # GOOS=linux GOARCH=amd64
-RUN CGO_ENABLED=0 go build -o /app/application .
+RUN CGO_ENABLED=0 go build -o application .
 
 
 # final stage
 FROM scratch
-COPY --from=builder /app/application /app/
+COPY --from=builder /out/application /app/
 
 # port configuration
 EXPOSE 8080
