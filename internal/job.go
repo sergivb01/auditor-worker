@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/rs/xid"
 	"github.com/sergivb01/acmecopy/api"
-	"go.uber.org/zap"
 )
 
 type JobTiming struct {
@@ -18,13 +16,13 @@ type JobTiming struct {
 	EndTime   time.Time
 	Took      time.Duration
 
-	errChan chan string
-	outChan chan string
-
 	Output []string
 	Errors []string
 
-	sync.Mutex
+	// errChan chan string
+	// outChan chan string
+	//
+	// sync.Mutex
 }
 
 type InputOutput struct {
@@ -60,12 +58,12 @@ func (w *Worker) newJob(req *api.CompileRequest) (*Job, error) {
 		ID: id,
 		workingDir: dir,
 		Execute: JobTiming{
-			errChan: make(chan string),
-			outChan: make(chan string),
+			// errChan: make(chan string),
+			// outChan: make(chan string),
 		},
 		Build: JobTiming{
-			errChan: make(chan string),
-			outChan: make(chan string),
+			// errChan: make(chan string),
+			// outChan: make(chan string),
 		},
 		InputOutput: InputOutput{
 			Input:          req.Input,
@@ -73,48 +71,48 @@ func (w *Worker) newJob(req *api.CompileRequest) (*Job, error) {
 		},
 	}, nil
 }
-
-func (job *Job) listenForErrors(w *Worker) {
-	for {
-		select {
-		case err := <-job.Build.errChan:
-			job.Build.Lock()
-			job.Build.Errors = append(job.Build.Errors, err)
-			job.Build.Unlock()
-			w.log.Info("received error from compiler", zap.String("jobID", job.ID), zap.String("error", err))
-			break
-
-		case err := <-job.Execute.errChan:
-			job.Execute.Lock()
-			job.Execute.Errors = append(job.Execute.Errors, err)
-			job.Execute.Unlock()
-			w.log.Info("received error from exec", zap.String("jobID", job.ID), zap.String("error", err))
-			break
-
-		}
-	}
-}
-
-func (job *Job) listenForOutputs(w *Worker) {
-	for {
-		select {
-		case buildOut := <-job.Build.outChan:
-			if strings.TrimSpace(buildOut) != "" {
-				job.Build.Lock()
-				job.Build.Output = append(job.Build.Output, buildOut)
-				job.Build.Unlock()
-				w.log.Info("received output from compiler", zap.String("jobID", job.ID), zap.String("out", buildOut))
-			}
-			break
-
-		case execOut := <-job.Execute.outChan:
-			if strings.TrimSpace(execOut) != "" {
-				job.Execute.Lock()
-				job.Execute.Output = append(job.Execute.Output, execOut)
-				job.Execute.Unlock()
-				w.log.Info("received output from exec", zap.String("jobID", job.ID), zap.String("out", execOut))
-			}
-			break
-		}
-	}
-}
+//
+// func (job *Job) listenForErrors(w *Worker) {
+// 	for {
+// 		select {
+// 		case err := <-job.Build.errChan:
+// 			job.Build.Lock()
+// 			job.Build.Errors = append(job.Build.Errors, err)
+// 			job.Build.Unlock()
+// 			w.log.Info("received error from compiler", zap.String("jobID", job.ID), zap.String("error", err))
+// 			break
+//
+// 		case err := <-job.Execute.errChan:
+// 			job.Execute.Lock()
+// 			job.Execute.Errors = append(job.Execute.Errors, err)
+// 			job.Execute.Unlock()
+// 			w.log.Info("received error from exec", zap.String("jobID", job.ID), zap.String("error", err))
+// 			break
+//
+// 		}
+// 	}
+// }
+//
+// func (job *Job) listenForOutputs(w *Worker) {
+// 	for {
+// 		select {
+// 		case buildOut := <-job.Build.outChan:
+// 			if strings.TrimSpace(buildOut) != "" {
+// 				job.Build.Lock()
+// 				job.Build.Output = append(job.Build.Output, buildOut)
+// 				job.Build.Unlock()
+// 				w.log.Info("received output from compiler", zap.String("jobID", job.ID), zap.String("out", buildOut))
+// 			}
+// 			break
+//
+// 		case execOut := <-job.Execute.outChan:
+// 			if strings.TrimSpace(execOut) != "" {
+// 				job.Execute.Lock()
+// 				job.Execute.Output = append(job.Execute.Output, execOut)
+// 				job.Execute.Unlock()
+// 				w.log.Info("received output from exec", zap.String("jobID", job.ID), zap.String("out", execOut))
+// 			}
+// 			break
+// 		}
+// 	}
+// }

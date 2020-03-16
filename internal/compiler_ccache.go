@@ -5,12 +5,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
-
-	"go.uber.org/zap"
 )
 
-func (w *Worker) compileWithCCache(job *Job) {
-	defer w.Track("compileWithCCache(job *Job)", Start())
+func (w *Worker) compileWithCCache(job *Job) error {
+	defer w.Track("compileWithCCache(jobID="+job.ID+")", Start())
 
 	job.Build.StartTime = time.Now()
 
@@ -22,12 +20,13 @@ func (w *Worker) compileWithCCache(job *Job) {
 	cmd := exec.Command("ccache", append(args, "-o", filepath.Join(job.workingDir, "target.exe"))...)
 	b, err := cmd.CombinedOutput()
 	if err != nil {
-		job.Build.errChan <- err.Error() + fmt.Sprintf(cmd.Path+" (%s)", cmd.Args)
+		// job.Build.errChan <- err.Error() + fmt.Sprintf(cmd.Path+" (%s)", cmd.Args)
+		return fmt.Errorf("error compiling with ccache: %w", err)
 	}
-	job.Build.outChan <- string(b)
+	job.Build.Output = append(job.Build.Output, string(b))
 
 	job.Build.EndTime = time.Now()
 	job.Build.Took = job.Build.EndTime.Sub(job.Build.StartTime)
 
-	w.log.Info("built project", zap.String("jobID", job.ID), zap.Duration("took", job.Build.Took))
+	return nil
 }

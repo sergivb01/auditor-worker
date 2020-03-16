@@ -2,11 +2,8 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/sergivb01/acmecopy/api"
 	"go.uber.org/zap"
@@ -27,33 +24,17 @@ func (w *Worker) CompileFiles(_ context.Context, req *api.CompileRequest) (*api.
 		}()
 	}
 
-	// TODO: speed up this
-	t := Start()
-	for _, file := range req.Files {
-		if filepath.Ext(file.FileName) != ".h" && filepath.Ext(file.FileName) != ".cpp" {
-			continue
-		}
-
-		if filepath.Ext(file.FileName) == ".cpp" {
-			job.CompileFiles = append(job.CompileFiles, filepath.Join(job.workingDir, removeExtension(file.FileName)))
-		}
-		job.UploadFiles = append(job.UploadFiles, filepath.Join(job.workingDir, file.FileName))
-
-		if err := ioutil.WriteFile(filepath.Join(job.workingDir, file.FileName), file.Content, 744); err != nil {
-			return &api.CompileResponse{}, err
-		}
+	if err := job.parseAndWriteFiles(req); err != nil {
+		return nil, fmt.Errorf("error writing temp files: %w", err)
 	}
-	w.Track("parse and write files", t)
 
-	go job.listenForOutputs(w)
-	go job.listenForErrors(w)
-
-	if w.cfg.CCacheEnabled {
-		w.compileWithCCache(job)
-	} else {
-		w.compileWithParallelism(job)
+	if err := w.compileWithCCache(job); err != nil {
+		return nil, fmt.Errorf("error compiling: %w", err)
 	}
-	w.runTarget(job)
+
+	if err := w.runTarget(job); err != nil {
+		return nil, fmt.Errorf("error running target: %w", err)
+	}
 
 	return &api.CompileResponse{
 		Id: job.ID,
@@ -72,13 +53,4 @@ func (w *Worker) CompileFiles(_ context.Context, req *api.CompileRequest) (*api.
 			Log:       job.Execute.Output,
 		},
 	}, nil
-}
-
-func printJob(job *Job) {
-	b, err := json.Marshal(job)
-	if err != nil {
-		fmt.Println("12334" + err.Error())
-		return
-	}
-	fmt.Printf("%s\n\n", b)
 }
