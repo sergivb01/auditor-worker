@@ -23,4 +23,4 @@ COPY --from=builder /app/application .
 
 CMD ["./application"]
 
-export DOCKER_BUILDKIT=1
+#export DOCKER_BUILDKIT=1

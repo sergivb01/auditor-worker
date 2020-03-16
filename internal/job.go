@@ -23,6 +23,8 @@ type JobTiming struct {
 
 	Output []string
 	Errors []string
+
+	sync.Mutex
 }
 
 type InputOutput struct {
@@ -38,7 +40,6 @@ type Job struct {
 
 	InputOutput InputOutput
 
-	req        *api.CompileRequest
 	workingDir string
 
 	Build   JobTiming
@@ -56,8 +57,7 @@ func (w *Worker) newJob(req *api.CompileRequest) (*Job, error) {
 	}
 
 	return &Job{
-		ID:         id,
-		req:        req,
+		ID: id,
 		workingDir: dir,
 		Execute: JobTiming{
 			errChan: make(chan string),
@@ -68,42 +68,50 @@ func (w *Worker) newJob(req *api.CompileRequest) (*Job, error) {
 			outChan: make(chan string),
 		},
 		InputOutput: InputOutput{
-			Input: []string{
-				"hola test123",
-				"#",
-			},
-			ExpectedOutput: []string{
-				"ENTRA TEXT ACABAT EN #:",
-				"TEXT REVES:",
-				"test123 hola ",
-			},
+			Input:          req.Input,
+			ExpectedOutput: req.ExpectedOutput,
 		},
 	}, nil
+}
+
+func (job *Job) listenForErrors(w *Worker) {
+	for {
+		select {
+		case err := <-job.Build.errChan:
+			job.Build.Lock()
+			job.Build.Errors = append(job.Build.Errors, err)
+			job.Build.Unlock()
+			w.log.Info("received error from compiler", zap.String("jobID", job.ID), zap.String("error", err))
+			break
+
+		case err := <-job.Execute.errChan:
+			job.Execute.Lock()
+			job.Execute.Errors = append(job.Execute.Errors, err)
+			job.Execute.Unlock()
+			w.log.Info("received error from exec", zap.String("jobID", job.ID), zap.String("error", err))
+			break
+
+		}
+	}
 }
 
 func (job *Job) listenForOutputs(w *Worker) {
 	for {
 		select {
-		case err := <-job.Build.errChan:
-			job.Build.Errors = append(job.Build.Errors, err)
-			w.log.Info("received error from compiler", zap.String("jobID", job.ID), zap.String("error", err))
-			break
-
 		case buildOut := <-job.Build.outChan:
 			if strings.TrimSpace(buildOut) != "" {
+				job.Build.Lock()
 				job.Build.Output = append(job.Build.Output, buildOut)
+				job.Build.Unlock()
 				w.log.Info("received output from compiler", zap.String("jobID", job.ID), zap.String("out", buildOut))
 			}
 			break
 
-		case err := <-job.Execute.errChan:
-			job.Execute.Errors = append(job.Execute.Errors, err)
-			w.log.Info("received error from exec", zap.String("jobID", job.ID), zap.String("error", err))
-			break
-
 		case execOut := <-job.Execute.outChan:
 			if strings.TrimSpace(execOut) != "" {
+				job.Execute.Lock()
 				job.Execute.Output = append(job.Execute.Output, execOut)
+				job.Execute.Unlock()
 				w.log.Info("received output from exec", zap.String("jobID", job.ID), zap.String("out", execOut))
 			}
 			break

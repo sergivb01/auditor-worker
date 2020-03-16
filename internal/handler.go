@@ -46,6 +46,7 @@ func (w *Worker) CompileFiles(_ context.Context, req *api.CompileRequest) (*api.
 	w.Track("parse and write files", t)
 
 	go job.listenForOutputs(w)
+	go job.listenForErrors(w)
 
 	if w.cfg.CCacheEnabled {
 		w.compileWithCCache(job)
