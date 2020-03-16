@@ -28,4 +28,4 @@ jobs:
         go mod verify
 
     - name: Build
-      run: go build -v -o . github.com/sergivb01/auditor-worker/cmd
+      run: go build github.com/sergivb01/auditor-worker/cmd
