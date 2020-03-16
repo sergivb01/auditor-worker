@@ -2,7 +2,7 @@
 [![pr_welcome][pr_welcome]][pr_welcome-url]
 
 Auditor worker is the worker (also known as _slave_) for the auditor project.
-It uses [GRPC](https://grpc.io/), although I am planning to use NSQ (:heart:), Kafka or RabbitMQ. 
+It uses [GRPC](https://grpc.io/), although I am planning to use **[bokchoy](https://github.com/thoas/bokchoy)** ~~NSQ (:heart:), Kafka or RabbitMQ~~. 
 
 The worker process consists of (**simplified**):
  * Workers get a _bunch_ of files.
