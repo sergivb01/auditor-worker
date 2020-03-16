@@ -14,7 +14,7 @@ type Config struct {
 
 	CCacheEnabled bool
 
-	RemoveOld  bool
+	RemoveOld bool
 
 	TLSCert string
 	TLSKey  string
@@ -25,12 +25,12 @@ func loadConfig() (*Config, error) {
 		return nil, err
 	}
 	return &Config{
-		Listen:     getEnv("LISTEN_ADDR", "localhost:3000"),
-		Production: getEnv("PRODUCTION", "false") == "true",
-		TLSCert:    getEnv("TLS_CERT", "C:\\Users\\Sergi\\Desktop\\acmecopy\\certs\\certificate.pem"),
-		TLSKey:     getEnv("TLS_KEY", "C:\\Users\\Sergi\\Desktop\\acmecopy\\certs\\key.pem"),
-		RemoveOld:  getEnv("REMOVE_OLD", "true") == "true",
-		CCacheEnabled:  getEnv("CCACHE_ENABLED", "true") == "true",
+		Listen:        getEnv("LISTEN_ADDR", "localhost:3000"),
+		Production:    getEnv("PRODUCTION", "false") == "true",
+		TLSCert:       getEnv("TLS_CERT", "C:\\Users\\Sergi\\Desktop\\acmecopy\\certs\\certificate.pem"),
+		TLSKey:        getEnv("TLS_KEY", "C:\\Users\\Sergi\\Desktop\\acmecopy\\certs\\key.pem"),
+		RemoveOld:     getEnv("REMOVE_OLD", "true") == "true",
+		CCacheEnabled: getEnv("CCACHE_ENABLED", "true") == "true",
 	}, nil
 }
 

@@ -14,7 +14,7 @@ func (w *Worker) compileWithCCache(job *Job) error {
 
 	var args = []string{"g++", "-std=c++11", "-O0"}
 	for _, file := range job.CompileFiles {
-		args = append(args, file+".cpp")
+		args = append(args, file)
 	}
 
 	cmd := exec.Command("ccache", append(args, "-o", filepath.Join(job.workingDir, "target.exe"))...)

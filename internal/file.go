@@ -21,11 +21,14 @@ func (job *Job) parseAndWriteFiles(req *api.CompileRequest) error {
 			break
 		}
 
+		if filepath.Ext(file.FileName) != ".cpp" && filepath.Ext(file.FileName) != ".h" {
+			continue
+		}
+
 		go func(wg *sync.WaitGroup, file *api.File) {
 			if filepath.Ext(file.FileName) == ".cpp" {
-				job.CompileFiles = append(job.CompileFiles, filepath.Join(job.workingDir, removeExtension(file.FileName)))
+				job.CompileFiles = append(job.CompileFiles, filepath.Join(job.workingDir, file.FileName))
 			}
-			job.UploadFiles = append(job.UploadFiles, filepath.Join(job.workingDir, file.FileName))
 
 			if err := ioutil.WriteFile(filepath.Join(job.workingDir, file.FileName), file.Content, 744); err != nil {
 				success.Store(false)
@@ -34,8 +37,10 @@ func (job *Job) parseAndWriteFiles(req *api.CompileRequest) error {
 			}
 			wg.Done()
 		}(&wg, file)
+
 		wg.Add(1)
 	}
+
 	wg.Wait()
 
 	return writeErr
