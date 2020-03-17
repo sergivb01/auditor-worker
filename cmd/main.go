@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/sergivb01/auditor-worker/internal"
+	"github.com/sergivb01/auditor-worker/worker"
 )
 
 func main() {
@@ -13,7 +13,13 @@ func main() {
 		return
 	}
 
-	if err := srv.Listen(); err != nil {
+	go sendJobs(srv)
+
+	if err := srv.Start(); err != nil {
 		fmt.Println(err)
 	}
+}
+
+func sendJobs(srv *worker.Worker) {
+	fmt.Println("starting to send jobs...")
 }
