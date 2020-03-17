@@ -7,6 +7,16 @@ import (
 	"time"
 )
 
+var ccachePath string
+
+func init() {
+	foundCcachePath, err := exec.LookPath("ccache")
+	if err != nil {
+		panic("couldn't find ccache in path!")
+	}
+	ccachePath = foundCcachePath
+}
+
 func (w *Worker) compileWithCCache(job *Job) error {
 	defer w.Track("compileWithCCache(jobID="+job.ID+")", Start())
 
@@ -17,7 +27,7 @@ func (w *Worker) compileWithCCache(job *Job) error {
 		args = append(args, file)
 	}
 
-	cmd := exec.Command("ccache", append(args, "-o", filepath.Join(job.workingDir, "target.exe"))...)
+	cmd := exec.Command(ccachePath, append(args, "-o", filepath.Join(job.workingDir, "target.exe"))...)
 	b, err := cmd.CombinedOutput()
 	if err != nil {
 		// job.Build.errChan <- err.Error() + fmt.Sprintf(cmd.Path+" (%s)", cmd.Args)

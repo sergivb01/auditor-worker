@@ -1,15 +1,5 @@
 package worker
 
-import (
-	// "fmt"
-	// "os/exec"
-	// "path/filepath"
-	// "sync"
-	// "time"
-	//
-	// "go.uber.org/zap"
-)
-
 // func (w *Worker) compileSingleFile(file string, wg *sync.WaitGroup) ([]byte, error) {
 // 	defer w.Track("compileSingleFile("+file+")", Start())
 // 	cmd := exec.Command("g++", "-O0", "-c", file+".cpp", "-o", file+".o")

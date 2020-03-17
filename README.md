@@ -8,7 +8,9 @@ The worker process consists of (**simplified**):
  * Workers get a _bunch_ of files.
  * The compilation process is executed using [CCache](https://ccache.dev/) to speed builds up.
  * A _bunch_ of tests or execution-examples are run in parallel (if compilation was successful).
- * Results from the compilation (warnings) and execution get returned. If any mismatches were captured, they will be returned as errors. 
+ * Results from the compilation (warnings) and execution get returned. If any output mismatches were captured, they will be returned as errors.
+
+To write/read from the program during executing we pipe the `stdin`, `stdout` and `stderr`.  
 
 ## 📖 License
 **Auditor Worker** is licensed under the [MIT License](LICENSE).
